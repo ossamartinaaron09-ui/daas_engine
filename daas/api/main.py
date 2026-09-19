@@ -89,6 +89,8 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
     def query_records(
         vertical: Optional[str] = Query(None, description="Vertical category filter"),
         keyword: Optional[str] = Query(None, description="Search term matching title, category, location, or payload"),
+        limit: int = Query(10, ge=1, le=10, description="Maximum records to return (1-10 demo limit)"),
+        offset: int = Query(0, ge=0, description="Pagination offset (demo limits apply)"),
         db: DatabaseManager = Depends(get_db),
     ) -> Dict[str, Any]:
         """Retrieve a fixed sample list of validated records with optional filtering (Demo Mode)."""
@@ -104,14 +106,14 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
             normalized_vertical = clean_vert
 
         # Hardcode limits to prevent DB scraping
-        limit = 10
-        offset = 0
+        safe_limit = min(limit, 10)
+        safe_offset = min(offset, 20)
 
         items, total = db.query_records(
             vertical=normalized_vertical,
             keyword=keyword,
-            limit=limit,
-            offset=offset,
+            limit=safe_limit,
+            offset=safe_offset,
         )
 
         return {
@@ -169,40 +171,7 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
             "total_records": sum(counts.values()),
         }
 
-    # Route 5: Ingest / Store Record
-    @app.post(
-        "/records",
-        status_code=status.HTTP_201_CREATED,
-        summary="Ingest and validate a new polymorphic record",
-    )
-    def create_record_endpoint(
-        body: Dict[str, Any],
-        db: DatabaseManager = Depends(get_db),
-    ) -> Dict[str, Any]:
-        """Accept polymorphic record payload, validate against Pydantic schema, and persist in SQLite."""
-        if not isinstance(body, dict):
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="Request body must be a JSON object",
-            )
-
-        try:
-            record = create_record(body)
-        except (ValueError, ValidationError) as exc:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=str(exc),
-            )
-
-        new_id = db.insert_record(record)
-        vert_str = record.vertical.value if isinstance(record.vertical, VerticalEnum) else str(record.vertical)
-
-        return {
-            "id": new_id,
-            "vertical": vert_str,
-            "status": "created",
-            "message": "Record successfully validated and persisted",
-        }
+    # POST endpoint disabled for public security (Internal ingestion only)
 
     return app
 
