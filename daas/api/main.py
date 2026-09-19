@@ -10,6 +10,7 @@ from pydantic import ValidationError
 
 from fastapi import Depends, FastAPI, HTTPException, Path, Query, status
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 from daas import __version__
 from daas.db.manager import DatabaseManager
@@ -47,6 +48,14 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
         title="DaaS Engine MVP Delivery API",
         version=__version__,
         description="RESTful delivery API for multi-vertical B2B structured records.",
+    )
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
 
     if db_path is not None:
