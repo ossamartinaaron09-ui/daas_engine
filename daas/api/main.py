@@ -89,11 +89,9 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
     def query_records(
         vertical: Optional[str] = Query(None, description="Vertical category filter"),
         keyword: Optional[str] = Query(None, description="Search term matching title, category, location, or payload"),
-        limit: int = Query(50, ge=1, le=100, description="Maximum records to return (1-100)"),
-        offset: int = Query(0, ge=0, description="Pagination offset (>= 0)"),
         db: DatabaseManager = Depends(get_db),
     ) -> Dict[str, Any]:
-        """Retrieve paginated list of validated records with optional filtering."""
+        """Retrieve a fixed sample list of validated records with optional filtering (Demo Mode)."""
         normalized_vertical: Optional[str] = None
         if vertical is not None:
             clean_vert = vertical.strip().lower()
@@ -105,6 +103,10 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
                 )
             normalized_vertical = clean_vert
 
+        # Hardcode limits to prevent DB scraping
+        limit = 10
+        offset = 0
+
         items, total = db.query_records(
             vertical=normalized_vertical,
             keyword=keyword,
@@ -113,9 +115,9 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
         )
 
         return {
-            "total": total,
-            "limit": limit,
-            "offset": offset,
+            "demo_notice": "PUBLIC ENDPOINT - Results limited to 10 samples. Purchase full access or use private API key for remaining records.",
+            "total_available_in_database": total,
+            "sample_size_returned": len(items),
             "items": items,
         }
 
