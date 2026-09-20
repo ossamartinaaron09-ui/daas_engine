@@ -241,8 +241,8 @@ class DatabaseManager:
 
         if keyword:
             kw = f"%{keyword.strip()}%"
-            clauses.append("(title_or_name LIKE ? OR category LIKE ? OR location LIKE ? OR payload LIKE ?)")
-            params.extend([kw, kw, kw, kw])
+            clauses.append("(title_or_name LIKE ? OR category LIKE ? OR location LIKE ?)")
+            params.extend([kw, kw, kw])
 
         where_sql = ("WHERE " + " AND ".join(clauses)) if clauses else ""
 
